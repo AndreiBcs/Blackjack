@@ -12,10 +12,17 @@ let deck=[];
 let playerHand=[];
 let dealerHand=[];
 let balance=1000;
+let initialCheck=true;
 hitButton.disabled=true;
 standButton.disabled=true;
+window.onload=()=>{
+    balanceDisplay.textContent=`Balance: $${balance}`;
+    createDeck();
+    shuffleDeck();
+}
 
 function createDeck(){
+    deck=[];
     const suits=["rosu","romb","trefla","negru"];
     const values=["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
     for(let suit of suits){
@@ -32,105 +39,172 @@ function shuffleDeck(){
 }
 
 newGameButton.addEventListener("click",()=>{
-    let balance=1000;
+    balance=1000;
+    initialCheck=true;
+    dealerCards.innerHTML="";
+    playerCards.innerHTML="";
+    dealerTotal.textContent="0";
+    playerTotal.textContent="0";
     newGameButton.style.border="2px solid rgb(204, 207, 16)";
     balanceDisplay.textContent=`Balance: $${balance}`;
     betAmountInput.value=0;
+    createDeck();
+    shuffleDeck();
 });
 
 playButton.addEventListener("click",()=>{
-    const betAmount=parseInt(betAmountInput.value);
+    if(!checkBalance()) return;
+    if(!verifyBet()) return;
+
+    playButton.disabled=true;
+    initialCheck=true;
+
+    playerHand=[];
+    dealerHand=[];
+    playerHand.push(deck.pop());
+    deck.unshift(playerHand[playerHand.length-1]);
+    playerHand.push(deck.pop());
+    deck.unshift(playerHand[playerHand.length-1]);
+    dealerHand.push(deck.pop());
+    deck.unshift(dealerHand[dealerHand.length-1]);
+    updateUI();
+});
+
+function checkBalance(){
     if(balance<=0){
-        disableButtons();
+        playButton.disabled=true;
         newGameButton.style.border="2px solid red";
-        return;
+        return false;
     }
+    else{
+        return true;
+    }
+}
+
+function verifyBet(){
+    const betAmount=parseInt(betAmountInput.value);
     if(betAmount>balance){
         betAmountInput.value=0;
         betAmountInput.style.border="2px solid red";
-        return;
+        return false;
     }
     else if(betAmount<=0){
         betAmountInput.value=0;
         betAmountInput.style.border="2px solid red";
-        return;
+        return false;
+    }else{
+        betAmountInput.style.border="2px solid rgb(204, 207, 16)";
+        balance-=betAmount;
+        balanceDisplay.textContent=`Balance: $${balance}`;
+        return true;
     }
-    playButton.disabled=true;
-    betAmountInput.style.border="2px solid rgb(204, 207, 16)";
-    balance-=betAmount;
-    balanceDisplay.textContent=`Balance: $${balance}`;
-    deck=[];
-    playerHand=[];
-    dealerHand=[];
-    createDeck();
-    shuffleDeck();
-    playerHand.push(deck.pop());
-    playerHand.push(deck.pop());
-    dealerHand.push(deck.pop());
-    updateUI();
-});
-
-hitButton.addEventListener("click",hitCard);
-standButton.addEventListener("click",stand);
+}
 
 function updateUI(){
     dealerCards.innerHTML="";
     playerCards.innerHTML="";
+
     for(let card of playerHand){
         const img=document.createElement("img");
         img.src=card.image;
         playerCards.appendChild(img);
     }
+
     for(let card of dealerHand){
         const img=document.createElement("img");
         img.src=card.image;
         dealerCards.appendChild(img);
     }
+
     dealerTotal.textContent=`${calculateTotal(dealerHand)}`;
     playerTotal.textContent=`${calculateTotal(playerHand)}`;
-    if(calculateTotal(playerHand)===21){
-        disableButtons();
-    }else if(calculateTotal(playerHand)>21){
-        disableButtons();
+
+    if(initialCheck){
+        if(playerHand.length===2 && calculateTotal(playerHand)===21){
+            stand();
+        }else{
+            hitButton.disabled=false;
+            standButton.disabled=false;
+        }   
+        initialCheck=false;
+    }
+}
+
+hitButton.addEventListener("click",hitCard);
+standButton.addEventListener("click",stand);
+
+function hitCard(){
+    playerHand.push(deck.pop());
+    deck.unshift(playerHand[playerHand.length-1]);
+
+    const playerTotalValue=calculateTotal(playerHand);
+    if(playerHand.length>2 && playerTotalValue>21){
+        handleResult("player-bust");
+    }else if(playerTotalValue===21){
+        stand();
     }else{
         hitButton.disabled=false;
         standButton.disabled=false;
     }
-}
-
-function hitCard(){
-    playerHand.push(deck.pop());
     updateUI();
-    if(calculateTotal(playerHand)>21){
-        balance-=parseInt(betAmountInput.value);
-        balanceDisplay.textContent=`Balance: $${balance}`;
-        disableButtons();
-    }
-    else if(calculateTotal(playerHand)===21){
-        balance+=parseInt(betAmountInput.value)*2;
-        balanceDisplay.textContent=`Balance: $${balance}`;
-        disableButtons();
-    }
 }
 function stand(){
     while(calculateTotal(dealerHand)<17){
         dealerHand.push(deck.pop());
+        deck.unshift(dealerHand[dealerHand.length-1]);
+    }
+    const result = checkWin();
+    if(result){
+        handleResult(result);
     }
     updateUI();
-    const playerTotalValue=calculateTotal(playerHand);
-    const dealerTotalValue=calculateTotal(dealerHand);
-    if(dealerTotalValue>21||playerTotalValue>dealerTotalValue){
-        balance+=parseInt(betAmountInput.value)*2;
-        balanceDisplay.textContent=`Balance: $${balance}`;
-    }else if(playerTotalValue<dealerTotalValue){
-        balance-=parseInt(betAmountInput.value);
+}   
+
+function checkWin(){
+    const p = calculateTotal(playerHand);
+    const d = calculateTotal(dealerHand);
+
+    if(p>21) return "player-bust";
+    if(d>21) return "dealer-bust";
+
+    if(p===21) return "player-win";
+    if(d===21) return "dealer-win";
+
+    if(p===d) return "equal";
+    return p > d ? "player-win" : "dealer-win";
+}
+
+function handleResult(result){
+    const bet = parseInt(betAmountInput.value,10);
+    switch(result){
+        case "player-win":
+                balance += bet * 2;
+                disableButtons();
+                break;
+        case "dealer-bust":
+                balance += bet * 2;
+                disableButtons();
+                break;
+        case "equal":
+                balance += bet;
+                disableButtons();
+                break;
+        case "player-bust":
+                disableButtons();
+                break;
+        case "dealer-win":
+                disableButtons();
+                break;
+        default:
+            break;
+    }
+    if(!checkBalance()){
+        balance=0;
         balanceDisplay.textContent=`Balance: $${balance}`;
     }else{
-        balance+=parseInt(betAmountInput.value);
         balanceDisplay.textContent=`Balance: $${balance}`;
     }
-    disableButtons();
-}   
+}
 
 function calculateTotal(hand){
     let total=0;
