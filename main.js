@@ -5,9 +5,15 @@ const playerCards=document.getElementById("player-cards");
 const hitButton=document.getElementById("hit-button");
 const standButton=document.getElementById("stand-button");
 const newGameButton=document.getElementById("new-game-button");
+const betAmountInput=document.getElementById("bet-amount");
+const balanceDisplay=document.getElementById("balance");
+const playButton=document.getElementById("play-button");
 let deck=[];
 let playerHand=[];
 let dealerHand=[];
+let balance=1000;
+hitButton.disabled=true;
+standButton.disabled=true;
 
 function createDeck(){
     const suits=["rosu","romb","trefla","negru"];
@@ -24,9 +30,37 @@ function shuffleDeck(){
         [deck[i],deck[j]]=[deck[j],deck[i]];
     }
 }
-hitButton.disabled=true;
-standButton.disabled=true;
+
 newGameButton.addEventListener("click",()=>{
+    let balance=1000;
+    newGameButton.style.border="2px solid rgb(204, 207, 16)";
+    balanceDisplay.textContent=`Balance: $${balance}`;
+    betAmountInput.value=0;
+});
+
+playButton.addEventListener("click",()=>{
+    const betAmount=parseInt(betAmountInput.value);
+    if(balance<=0){
+        alert("Game over!");
+        disableButtons();
+        newGameButton.style.border="2px solid red";
+        return;
+    }
+    if(betAmount>balance){
+        alert("Insufficient balance!");
+        betAmountInput.value=0;
+        betAmountInput.style.border="2px solid red";
+        return;
+    }
+    else if(betAmount<=0){
+        alert("Please enter a valid bet amount!");
+        betAmountInput.style.border="2px solid red";
+        return;
+    }
+    playButton.disabled=true;
+    betAmountInput.style.border="2px solid rgb(204, 207, 16)";
+    balance-=betAmount;
+    balanceDisplay.textContent=`Balance: $${balance}`;
     deck=[];
     playerHand=[];
     dealerHand=[];
@@ -37,6 +71,10 @@ newGameButton.addEventListener("click",()=>{
     dealerHand.push(deck.pop());
     updateUI();
 });
+
+hitButton.addEventListener("click",hitCard);
+standButton.addEventListener("click",stand);
+
 function updateUI(){
     dealerCards.innerHTML="";
     playerCards.innerHTML="";
@@ -63,15 +101,20 @@ function updateUI(){
         standButton.disabled=false;
     }
 }
+
 function hitCard(){
     playerHand.push(deck.pop());
     updateUI();
     if(calculateTotal(playerHand)>21){
         alert("You lost!");
+        balance-=parseInt(betAmountInput.value);
+        balanceDisplay.textContent=`Balance: $${balance}`;
         disableButtons();
     }
     else if(calculateTotal(playerHand)===21){
         alert("You win!");
+        balance+=parseInt(betAmountInput.value)*2;
+        balanceDisplay.textContent=`Balance: $${balance}`;
         disableButtons();
     }
 }
@@ -84,13 +127,20 @@ function stand(){
     const dealerTotalValue=calculateTotal(dealerHand);
     if(dealerTotalValue>21||playerTotalValue>dealerTotalValue){
         alert("You win!");
+        balance+=parseInt(betAmountInput.value)*2;
+        balanceDisplay.textContent=`Balance: $${balance}`;
     }else if(playerTotalValue<dealerTotalValue){
         alert("You lost!");
+        balance-=parseInt(betAmountInput.value);
+        balanceDisplay.textContent=`Balance: $${balance}`;
     }else{
         alert("It's a tie!");
+        balance+=parseInt(betAmountInput.value);
+        balanceDisplay.textContent=`Balance: $${balance}`;
     }
     disableButtons();
 }   
+
 function calculateTotal(hand){
     let total=0;
     let aces=0;
@@ -110,9 +160,9 @@ function calculateTotal(hand){
     }
     return total;
 }
+
 function disableButtons(){
     hitButton.disabled=true;
     standButton.disabled=true;
+    playButton.disabled=false;
 }
-hitButton.addEventListener("click",hitCard);
-standButton.addEventListener("click",stand);

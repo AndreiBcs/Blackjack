@@ -22,11 +22,21 @@
                 <p>Total: <span id="player-total">0</span></p>
             </div>
         </section>
+        <section id="controls-container">
         <div id="controls">
             <button id="hit-button">Hit</button>
             <button id="stand-button">Stand</button>
             <button id="new-game-button">New Game</button>
         </div>
+        <div id="betting">
+            <div id="balance-container">
+                <div id="balance">Balance: $1000</div>
+                <label for="bet-amount">Bet Amount:</label>
+                <input type="number" id="bet-amount" min="1" max="1000" value="0">
+            </div>
+            <button id="play-button">Play</button>
+        </div>
+        </section>
     </main>
     <script src="main.js"></script>
 </body>
