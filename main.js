@@ -41,6 +41,7 @@ function shuffleDeck(){
 newGameButton.addEventListener("click",()=>{
     balance=1000;
     initialCheck=true;
+    playButton.disabled=false;
     dealerCards.innerHTML="";
     playerCards.innerHTML="";
     dealerTotal.textContent="0";
