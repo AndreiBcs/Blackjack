@@ -37,6 +37,11 @@ function shuffleDeck(){
         [deck[i],deck[j]]=[deck[j],deck[i]];
     }
 }
+betAmountInput.addEventListener("input", function() {
+  this.value = this.value.replace(/\D/g, "");      // remove non-digits
+  this.value = this.value.replace(/^0+/, "");      // remove all leading zeros
+  if (this.value === "") this.value = "0";         // keep a stable value
+});
 
 newGameButton.addEventListener("click",()=>{
     balance=1000;
@@ -83,17 +88,13 @@ function checkBalance(){
 }
 
 function verifyBet(){
-    const betAmount=parseInt(betAmountInput.value);
-    if(betAmount>balance){
-        betAmountInput.value=0;
-        betAmountInput.style.border="2px solid red";
-        return false;
+    const betAmount = parseInt(betAmountInput.value, 10);
+    if (Number.isNaN(betAmount) || betAmount <= 0 || betAmount > balance) {
+      betAmountInput.value = 0;
+      betAmountInput.style.border = "2px solid red";
+      return false;
     }
-    else if(betAmount<=0){
-        betAmountInput.value=0;
-        betAmountInput.style.border="2px solid red";
-        return false;
-    }else{
+    else{
         betAmountInput.style.border="2px solid rgb(204, 207, 16)";
         balance-=betAmount;
         balanceDisplay.textContent=`Balance: $${balance}`;
